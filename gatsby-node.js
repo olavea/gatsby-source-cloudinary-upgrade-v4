@@ -1,4 +1,5 @@
-const {newCloudinary, getResourceOptions} = require('./utils');
+const { result } = require("lodash");
+const { newCloudinary, getResourceOptions } = require("./utils");
 const type = `CloudinaryMedia`;
 
 const getNodeData = (gatsby, media) => {
@@ -9,37 +10,43 @@ const getNodeData = (gatsby, media) => {
     internal: {
       type,
       content: JSON.stringify(media),
-      contentDigest: gatsby.createContentDigest(media)
-    }
+      contentDigest: gatsby.createContentDigest(media),
+    },
   };
 };
 
-const addTransformations = (resource, transformation, secure)=>{
-  const splitURL = secure ? resource.secure_url.split('/') : resource.url.split('/');
-  splitURL.splice( 6, 0, transformation);
+const addTransformations = (resource, transformation, secure) => {
+  const splitURL = secure
+    ? resource.secure_url.split("/")
+    : resource.url.split("/");
+  splitURL.splice(6, 0, transformation);
 
-  const transformedURL = splitURL.join('/');
+  const transformedURL = splitURL.join("/");
   return transformedURL;
-      
-}
+};
 
-const createCloudinaryNodes = (gatsby, cloudinary, options) => {
-  return cloudinary.api.resources(options, (error, result) => {
-    const hasResources = (result && result.resources && result.resources.length);
+const createCloudinaryNodes = async (
+  gatsby,
+  cloudinary,
+  options,
+  { limit }
+) => {
+  const { reporter } = gatsby;
+  let nextCursor = null;
 
-    if (error) {
-      console.error(error);
-      return;
-    }
+  do {
+    const result = await cloudinary.api.resources({
+      resource_type: "image",
+      max_results: limit < 10 ? limit : 10,
+      next_cursor: nextCursor,
+    });
+    reporter.info(
+      `fetched 🌩️ Assets >>> ${result.resources.length} from ${nextCursor}`
+    );
 
-    if (!hasResources) {
-      console.warn('\n ~Yikes! No nodes created because no Cloudinary resources found. Try a different query?');
-      return;
-    }
+    result.resources.forEach((resource) => {
+      const transformations = "q_auto,f_auto"; // Default CL transformations, todo: fetch base transformations from config maybe.
 
-    result.resources.forEach(resource => {
-      const transformations = "q_auto,f_auto" // Default CL transformations, todo: fetch base transformations from config maybe.  
-      
       resource.url = addTransformations(resource, transformations);
       resource.secure_url = addTransformations(resource, transformations, true);
 
@@ -47,13 +54,16 @@ const createCloudinaryNodes = (gatsby, cloudinary, options) => {
       gatsby.actions.createNode(nodeData);
     });
 
-    console.info(`Added ${hasResources} CloudinaryMedia ${hasResources > 1 ? 'nodes' : 'node'}`);
-  });
+    nextCursor = result.next_cursor;
+    limit = limit - 10;
+  } while (nextCursor && limit > 0);
 };
 
 exports.sourceNodes = (gatsby, options) => {
   const cloudinary = newCloudinary(options);
   const resourceOptions = getResourceOptions(options);
 
-  return createCloudinaryNodes(gatsby, cloudinary, resourceOptions);
+  return createCloudinaryNodes(gatsby, cloudinary, resourceOptions, {
+    limit: 27,
+  });
 };
