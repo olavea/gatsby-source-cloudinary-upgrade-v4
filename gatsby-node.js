@@ -3,13 +3,16 @@ const type = `CloudinaryMedia`;
 
 // gatsby-node.js
 // 1.1 🤯. 🔌 ☑️ 🎶  = ({ 😹 }) => {
-
-// 1.2 return 😹.📖({})
-
-// 1.3  😹.🧶().®️().💁(`Enables`),
-
-//   })
-// }
+exports.pluginOptionsSchema = ({ Joi }) => {
+  // 1.2 return 😹.📖({
+  return Joi.object({
+    // 1.3  😹.🧶().®️().💁(`Enables`),
+    cloudName: Joi.string().required().description(`Enables cloudName.`),
+    apiKey: Joi.string().required().description(`Enables apiKey.`),
+    apiSecret: Joi.string().required().description(`Enables apiSecret.`),
+    uploadFolder: Joi.string().required().description(`Enables uploadFolder.`),
+  });
+};
 
 const getNodeData = (gatsby, media) => {
   return {
