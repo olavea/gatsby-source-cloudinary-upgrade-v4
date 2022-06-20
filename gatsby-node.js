@@ -24,10 +24,13 @@ try {
 const globalPluginOptions = {};
 
 // 3.6.  👸🌐🌀
-const initializaGlobalState = ({ newCloudinary, getResourceOptions }) => {
+const initializaGlobalState = (newCloudinary, getResourceOptions) => {
   // I a not sure if I am guessing right on how I am using newCloudinary && getResourceOptions
   // and how do I test if this works?
-  globalPluginOptions = newCloudinary && getResourceOptions;
+  const cloudinary = newCloudinary(options);
+  const resourceOptions = getResourceOptions(options);
+
+  return globalPluginOptions(cloudinary, resourceOptions);
 };
 
 // 3.7 if (💩🐸On🔌👸 === 'stable') {} else if (💩🐸On🔌👸 === 'unstable') {} else {}
